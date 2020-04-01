@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 namespace deckmaster
 {
+    [Serializable]
     public class DeckModel
     {
         /// <summary>
@@ -15,13 +16,15 @@ namespace deckmaster
         /// </summary>
         public int ownerId;
 
+        public CardModel[] cards;
+
         /// <summary>
         /// A list of cards for the deck.
         /// </summary>
-        public List<CardModel> cards;
+        public List<CardModel> cardModels;
 
         /// <summary>
-        /// The name of the deck
+        /// The Name of the deck
         /// </summary>
         public string name;
 
@@ -33,8 +36,9 @@ namespace deckmaster
         /// <summary>
         /// The last time the deck was updated on the server
         /// </summary>
-        public DateTime updatedAt;
+        public string updatedAt;
 
+        public DateTime updatedAtDateTime;
         // todo add the colors of the deck here.
     }
 }

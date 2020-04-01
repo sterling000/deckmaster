@@ -1,55 +1,99 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using System;
 
 namespace deckmaster
 {
+    [Serializable]
     public class CardModel
     {
-        /// <summary>
-        /// A unique identifier for this card, taken from archidekt.
-        /// </summary>
-        public int id;
 
-        /// <summary>
-        /// Another unique identifier for the card, taken from archidekt.
-        /// </summary>
-        public string uid;
-        
-        /// <summary>
-        /// unknown as of yet, but might have to do with the tags on cards in archidekt.
-        /// </summary>
-        public string options;
+        public CardData card;
+        public int quantity;
+        public Category category;
 
-        /// <summary>
-        /// todo: Let make this into an enum flag. cause i like readable enum flags, and determine if we require the colorIdentiy property from archidekt as well.
-        /// </summary>
-        public string colors;
-
-        /// <summary>
-        /// The card name as read from oracle.
-        /// </summary>
-        public string name;
-
-        /// <summary>
-        /// Mana cost in {2}{W} format
-        /// </summary>
-        public string cost;
-
-        /// <summary>
-        /// Converted mana cost
-        /// </summary>
-        public int cmc;
-
-        /// <summary>
-        /// Do i own the card or not.
-        /// </summary>
-        public bool owned;
-
-        /// <summary>
-        /// Which category it belongs to in the deck i.e. draw, interaction, ramp, land
-        /// </summary>
-        public string category;
     }
 }
 
+/*
+ * {
+            "card": {
+                "id": 82765,
+                "edition": {
+                    "editioncode": "mb1",
+                    "editionname": "Mystery Booster",
+                    "mtgoCode": null
+                },
+                "artist": "Chase Stone",
+                "rarity": "rare",
+                "options": [
+                    "Normal"
+                ],
+                "multiverseid": 0,
+                "flavor": "",
+                "prices": {
+                    "ck": 27.99,
+                    "ckfoil": 0,
+                    "tcg": 26.35,
+                    "tcgfoil": 0,
+                    "mtgo": 0,
+                    "mtgofoil": 0,
+                    "cm": 29.99,
+                    "cmfoil": 0
+                },
+                "uid": "2271862c-b1df-45f8-bb19-ae4b8ab0739e",
+                "tcgProductId": 203369,
+                "ckNormalId": 229714,
+                "ckFoilId": 0,
+                "mtgoNormalId": 0,
+                "mtgoFoilId": 0,
+                "oracleCard": {
+                    "colors": [
+                        "White"
+                    ],
+                    "colorIdentity": [
+                        "White"
+                    ],
+                    "types": [
+                        "Instant"
+                    ],
+                    "subTypes": [],
+                    "superTypes": [],
+                    "legalities": {
+                        "penny": "not_legal",
+                        "pauper": "not_legal",
+                        "standard": "not_legal",
+                        "modern": "not_legal",
+                        "1v1": "legal",
+                        "vintage": "legal",
+                        "duel": "legal",
+                        "legacy": "legal",
+                        "commander": "legal",
+                        "future": "not_legal",
+                        "brawl": "not_legal",
+                        "oldschool": "not_legal",
+                        "oathbreaker": "legal",
+                        "historic": "not_legal",
+                        "pioneer": "not_legal"
+                    },
+                    "name": "Teferi's Protection",
+                    "manaCost": "{2}{W}",
+                    "cmc": 3,
+                    "text": "Until your next turn, your life total can't change and you gain protection from everything. All permanents you control phase out. (While they're phased out, they're treated as though they don't exist. They phase in before you untap during your untap step.)\nExile Teferi's Protection.",
+                    "power": "",
+                    "toughness": "",
+                    "layout": "normal",
+                    "faces": [],
+                    "manaProduction": {}
+                },
+                "owned": 0,
+                "collectorNumber": "256",
+                "games": [
+                    1
+                ],
+                "cmEd": "mystery booster"
+            },
+            "quantity": 1,
+            "modifier": "Normal",
+            "category": "Interaction",
+            "label": ",#656565"
+        }
+*/
