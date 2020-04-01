@@ -13,8 +13,9 @@ GameObject:
   - component: {fileID: 1227857889650818319}
   - component: {fileID: 2726565254674794610}
   - component: {fileID: 3871388031364249274}
+  - component: {fileID: 5645395238735512680}
   m_Layer: 5
-  m_Name: entry
+  m_Name: deck
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -116,6 +117,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 0
   m_VerticalFit: 2
+--- !u!114 &5645395238735512680
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1227857889650818317}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 17aad581d00497c43b6197e894fcc342, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  name: {fileID: 8500995075721012741}
+  details: {fileID: 6418240412993248848}
 --- !u!1 &1227857889988823773
 GameObject:
   m_ObjectHideFlags: 0
