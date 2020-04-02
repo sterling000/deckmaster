@@ -12,6 +12,8 @@ public class Context : MonoBehaviour
 
     public RectTransform contentRectTransform;
 
+    public GameObject loadingPanel;
+
     /// <summary>
     /// Until it's determined if we can request my list of decks from the archidekt api, i'll hard code the id's here.
     /// </summary>
@@ -21,9 +23,13 @@ public class Context : MonoBehaviour
 
     public HashSet<int> pendingDeckListRequests;
 
+    private List<IObservable<Unit>> threadList = new List<IObservable<Unit>>();
+    //private IObservable<Unit>[] threadObservables = new IObservable<Unit>[15];
+
     // Start is called before the first frame update
     void Start()
     {
+        loadingPanel.SetActive(true);
         /// todo:   load saved data
         ///         check timestamp
         ///         request new data
@@ -31,6 +37,15 @@ public class Context : MonoBehaviour
         ///          
         pendingDeckListRequests = new HashSet<int>();
         decks.ToObservable().Subscribe(GetDeck);
+        Debug.Log($"threadList.Count: {threadList.Count}");
+        Observable.WhenAll(threadList.ToArray())
+            .ObserveOnMainThread() // we have to observe on the main thread to call instantiate for now.
+            .Subscribe(OnNextAllThreads, Debug.LogException, OnAllDecksCompleted);
+    }
+
+    private void OnNextAllThreads(Unit obj)
+    {
+        Debug.Log($"OnNextAllThreads: {obj}");
     }
 
     private void GetDeck(int id)
@@ -44,7 +59,7 @@ public class Context : MonoBehaviour
 #else
         if (pendingDeckListRequests.Add(id))
         {
-            IDisposable getDeck = Observable.Start(() =>
+            var getDeck = Observable.Start(() =>
             {
                 var webRequest = WebRequest.Create($"https://archidekt.com/api/decks/{id}/") as HttpWebRequest;
                 if (webRequest != null)
@@ -65,9 +80,9 @@ public class Context : MonoBehaviour
                     OnNextDeck(response);
                     response?.GetResponseStream()?.Dispose();
                 }
-            })
-                .ObserveOnMainThread() // we have to observe on the main thread to call instantiate for now.
-                .Subscribe(_ => {Debug.Log($"GetDeck OnNext: {id}"); }, e => {Debug.LogException(e); }, () => OnGetDeckCompleted(id));
+            });
+            
+            threadList.Add(getDeck);
         }
     }
 
@@ -105,13 +120,15 @@ public class Context : MonoBehaviour
         {
             DeckView deckView = Instantiate(deckViewPrefab);
             deckView.transform.SetParent(contentRectTransform);
-            deckViewPrefab.Name.text = model.name;
+            deckView.Name.text = model.name;
 
             foreach (CardModel card in model.cards)
             {
                 deckView.AddCard(card);
             }
         });
+
+        loadingPanel.SetActive(false);
     }
 
     private DeckModel DeserializeDeck(string serializedDeckList)
