@@ -1,13 +1,14 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Net;
 using deckmaster;
+using UniRx;
 using UnityEngine;
-using UnityEngine.Networking;
 
 public class Context : MonoBehaviour
 {
-    public DeckView deckView;
+    public DeckView deckViewPrefab;
 
     public RectTransform contentRectTransform;
 
@@ -18,63 +19,103 @@ public class Context : MonoBehaviour
 
     public List<DeckModel> deckLists;
 
+    public HashSet<int> pendingDeckListRequests;
+
     // Start is called before the first frame update
     void Start()
     {
-        // todo: need to fetch my decklists for my user somehow.
-
-        foreach (int id in decks)
-        {
-            StartCoroutine(GetRequest(string.Format("https://archidekt.com/api/decks/{0}/", id)));
-        }
-
-        //StartCoroutine(GetRequest("https://archidekt.com/api/decks/365563/"));
+        /// todo:   load saved data
+        ///         check timestamp
+        ///         request new data
+        ///         if new data analyze decks
+        ///          
+        pendingDeckListRequests = new HashSet<int>();
+        decks.ToObservable().Subscribe(GetDeck);
     }
 
-    IEnumerator GetRequest(string url)
+    private void GetDeck(int id)
     {
-        string json = String.Empty;
-        if (Application.isEditor) 
+        Debug.Log($"Getting Deck: {id}");
+#if !UNITY_EDITOR
+        TextAsset asset = Resources.Load<TextAsset>("test-deck");
+        
+        deckLists.Add(DeserializeDeck(asset.text));
+    }
+#else
+        if (pendingDeckListRequests.Add(id))
         {
-            TextAsset asset = Resources.Load<TextAsset>("test-deck");
-            json = asset.text;
+            IDisposable getDeck = Observable.Start(() =>
+            {
+                var webRequest = WebRequest.Create($"https://archidekt.com/api/decks/{id}/") as HttpWebRequest;
+                if (webRequest != null)
+                {
+                    webRequest.Method = WebRequestMethods.Http.Get;
+
+                    HttpWebResponse response;
+                    try
+                    {
+                        response = webRequest.GetResponse() as HttpWebResponse;
+                    }
+                    catch (WebException ex)
+                    {
+                        Debug.LogError(ex.Message);
+                        return;
+                    }
+
+                    OnNextDeck(response);
+                    response?.GetResponseStream()?.Dispose();
+                }
+            })
+                .ObserveOnMainThread() // we have to observe on the main thread to call instantiate for now.
+                .Subscribe(_ => {Debug.Log($"GetDeck OnNext: {id}"); }, e => {Debug.LogException(e); }, () => OnGetDeckCompleted(id));
+        }
+    }
+
+    private void OnGetDeckCompleted(int id)
+    {
+        if (pendingDeckListRequests.Remove(id) )
+        {
+            Debug.Log($"Pending Deck Lists: {pendingDeckListRequests.Count}");
+            if (pendingDeckListRequests.Count == 0)
+            {
+                // lets create our views
+                OnAllDecksCompleted();
+            }
         }
         else
         {
-            using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
-            {
-                // Request and wait for the desired page.
-                yield return webRequest.SendWebRequest();
-
-                if (webRequest.isNetworkError)
-                {
-                    Debug.Log(webRequest.error);
-                }
-                else
-                {
-                    Debug.Log("Received: " + webRequest.downloadHandler.text);
-                    json = webRequest.downloadHandler.text;
-                }
-
-
-            }
-            // todo: deserialize the result into a DeckModel
+            Debug.LogError($"Somehow we tried to remove a pending deck that wasn't in the hashset: {id}");
         }
+    }
 
-        if (!string.IsNullOrEmpty(json))
+    private void OnNextDeck(HttpWebResponse response)
+    {
+        using (StreamReader reader = new StreamReader(response.GetResponseStream()))
         {
-            // populate the deckLists
-            DeckView deckGameObject = Instantiate(deckView);
-            deckGameObject.transform.SetParent(contentRectTransform);
-
-            var obj = JsonUtility.FromJson<DeckModel>(json);
-            // set the Name of the deck
-            deckView.Name.text = obj.name;
-            // perform our logic to determine the staples
-            foreach (CardModel model in obj.cards)
-            {
-                deckGameObject.AddCard(model);
-            }
+            string serializedDeckList = reader.ReadToEnd();
+            deckLists.Add(DeserializeDeck(serializedDeckList));
         }
+    }
+#endif
+
+    private void OnAllDecksCompleted()
+    {
+        // todo: broadcast this to the screencontroller and let it create these
+        deckLists.ForEach(model =>
+        {
+            DeckView deckView = Instantiate(deckViewPrefab);
+            deckView.transform.SetParent(contentRectTransform);
+            deckViewPrefab.Name.text = model.name;
+
+            foreach (CardModel card in model.cards)
+            {
+                deckView.AddCard(card);
+            }
+        });
+    }
+
+    private DeckModel DeserializeDeck(string serializedDeckList)
+    {
+        return JsonUtility.FromJson<DeckModel>(serializedDeckList);
     }
 }

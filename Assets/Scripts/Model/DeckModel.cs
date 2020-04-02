@@ -10,18 +10,11 @@ namespace deckmaster
         /// The unique deck id from archidekt.
         /// </summary>
         public int id;
-
+        
         /// <summary>
-        /// the unique account id of the owner of the deck.
+        /// Array of cards in the deck
         /// </summary>
-        public int ownerId;
-
         public CardModel[] cards;
-
-        /// <summary>
-        /// A list of cards for the deck.
-        /// </summary>
-        public List<CardModel> cardModels;
 
         /// <summary>
         /// The Name of the deck
@@ -37,8 +30,5 @@ namespace deckmaster
         /// The last time the deck was updated on the server
         /// </summary>
         public string updatedAt;
-
-        public DateTime updatedAtDateTime;
-        // todo add the colors of the deck here.
     }
 }
