@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Net;
 using deckmaster;
+using PersistentStorage;
 using UniRx;
 using UnityEngine;
 
@@ -24,12 +26,16 @@ public class Context : MonoBehaviour
     public HashSet<int> pendingDeckListRequests;
 
     private List<IObservable<Unit>> threadList = new List<IObservable<Unit>>();
-    //private IObservable<Unit>[] threadObservables = new IObservable<Unit>[15];
 
+    // i wanted to use threads for my db access but the persistent data path only seems to be accessible from the main thread, so lets get it here and pass it along.
+    private string PersistentDataPath;
+    
     // Start is called before the first frame update
     void Start()
     {
+        PersistentDataPath = Application.persistentDataPath;
         loadingPanel.SetActive(true);
+        
         /// todo:   load saved data
         ///         check timestamp
         ///         request new data
@@ -108,7 +114,13 @@ public class Context : MonoBehaviour
         using (StreamReader reader = new StreamReader(response.GetResponseStream()))
         {
             string serializedDeckList = reader.ReadToEnd();
-            deckLists.Add(DeserializeDeck(serializedDeckList));
+            DeckModel model = DeserializeDeck(serializedDeckList);
+            deckLists.Add(model);
+            
+            // cache our decklists
+            DeckListDb deckListDB = new DeckListDb(PersistentDataPath);
+            deckListDB.AddData(new DeckListEntry(model.id.ToString(), model.name));
+            deckListDB.Close();
         }
     }
 #endif
@@ -127,6 +139,16 @@ public class Context : MonoBehaviour
                 deckView.AddCard(card);
             }
         });
+
+        DeckListDb deckListDB = new DeckListDb(PersistentDataPath);
+        IDataReader reader = deckListDB.GetAllData();
+        List<DeckListEntry> deckListEntries = new List<DeckListEntry>();
+        while (reader.Read())
+        {
+            DeckListEntry entry = new DeckListEntry(reader[0].ToString(), reader[1].ToString());
+            Debug.Log($"id: {entry.Id} name: {entry.Name} created: {entry.DateCreated} updated: {entry.DateUpdated}");
+            deckListEntries.Add(entry);
+        }
 
         loadingPanel.SetActive(false);
     }
