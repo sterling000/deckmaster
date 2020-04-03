@@ -119,7 +119,7 @@ public class Context : MonoBehaviour
             
             // cache our decklists
             DeckListDb deckListDB = new DeckListDb(PersistentDataPath);
-            deckListDB.AddData(new DeckListEntry(model.id.ToString(), model.name));
+            deckListDB.CreateOrUpdateData(new DeckListEntry(model.id.ToString(), model.name)); // AddData will have conflicts
             deckListDB.Close();
         }
     }
@@ -145,7 +145,7 @@ public class Context : MonoBehaviour
         List<DeckListEntry> deckListEntries = new List<DeckListEntry>();
         while (reader.Read())
         {
-            DeckListEntry entry = new DeckListEntry(reader[0].ToString(), reader[1].ToString());
+            DeckListEntry entry = new DeckListEntry(reader[0].ToString(), reader[1].ToString(), reader[2].ToString(), reader[3].ToString());
             Debug.Log($"id: {entry.Id} name: {entry.Name} created: {entry.DateCreated} updated: {entry.DateUpdated}");
             deckListEntries.Add(entry);
         }

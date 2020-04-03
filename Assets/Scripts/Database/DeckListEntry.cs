@@ -7,8 +7,8 @@ namespace PersistentStorage
     {
         public string Id;
         public string Name;
-        public string DateCreated;
-        public string DateUpdated;
+        public string DateCreated; // YYYY-MM-DD HH:MM:SS
+        public string DateUpdated; // YYYY-MM-DD HH:MM:SS
 
         public DeckListEntry(string Id, string Name)
         {

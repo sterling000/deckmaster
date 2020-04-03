@@ -8,8 +8,8 @@ namespace PersistentStorage
         private const string TABLE_NAME = "DeckLists";
         private const string KEY_ID = "id";
         private const string KEY_NAME = "name";
-        private const string KEY_DATE_CREATED = "date_created";
-        private const string KEY_DATE_UPDATED = "date_updated";
+        private const string KEY_DATE_CREATED = "date_created"; // YYYY-MM-DD HH:MM:SS
+        private const string KEY_DATE_UPDATED = "date_updated"; // YYYY-MM-DD HH:MM:SS
         private string[] COLUMNS = new[] {KEY_ID, KEY_NAME, KEY_DATE_CREATED, KEY_DATE_UPDATED};
 
         public DeckListDb(string persistentDataPath) : base(persistentDataPath)
@@ -18,8 +18,8 @@ namespace PersistentStorage
             cmd.CommandText = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " ( " +
                               KEY_ID + " TEXT PRIMARY KEY, " +
                               KEY_NAME + " TEXT, " +
-                              KEY_DATE_CREATED + " DATETIME DEFAULT CURRENT_TIMESPTAMP, " +
-                              KEY_DATE_UPDATED + " DATETIME DEFAULT CURRENT_TIMESPTAMP ) ";
+                              KEY_DATE_CREATED + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                              KEY_DATE_UPDATED + " DATETIME DEFAULT CURRENT_TIMESTAMP ) ";
             cmd.ExecuteNonQuery();
         }
 
@@ -33,7 +33,25 @@ namespace PersistentStorage
 
                                              + "VALUES ( '"
                                              + deckList.Id + "', '"
-                                             + deckList.Name + "' ) ";
+                                             + deckList.Name + "' ) "; // should parse out apostrophies from the deckname so we don't break our sql
+            cmd.ExecuteNonQuery();
+        }
+
+        public void CreateOrUpdateData(DeckListEntry deckList)
+        {
+            IDbCommand cmd = GetDbCommand();
+            cmd.CommandText = "INSERT OR REPLACE INTO " + TABLE_NAME
+                                                        + " ( "
+                                                        + KEY_ID + ", "
+                                                        + KEY_NAME + ", "
+                                                        + KEY_DATE_CREATED + ", "
+                                                        + KEY_DATE_UPDATED + " ) "
+
+                                                        + "VALUES ( '"
+                                                        + deckList.Id + "', '"
+                                                        + deckList.Name + "', " // should parse out apostrophies from the deckname so we don't break our sql
+                                                        + "( SELECT " + KEY_DATE_CREATED + " FROM " + TABLE_NAME + " WHERE " + KEY_ID + " = " + deckList.Id + ") , " // this should leave the created timestamp unchanged.
+                                                        + "CURRENT_TIMESTAMP ) ";
             cmd.ExecuteNonQuery();
         }
 
