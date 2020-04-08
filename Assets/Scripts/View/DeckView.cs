@@ -6,7 +6,7 @@ namespace deckmaster
     public class DeckView : MonoBehaviour
     {
         public TextMeshProUGUI Name;
-
+        public TextMeshProUGUI StaplesCount;
         public CardView cardView;
         public RectTransform contentRectTransform;
 
@@ -15,6 +15,7 @@ namespace deckmaster
             CardView view = Instantiate(cardView);
             view.nameText.text = card.card.oracleCard.name;
             view.transform.SetParent(contentRectTransform);
+            //cardView.index.text = view.transform.GetSiblingIndex().ToString();
         }
     }
 }

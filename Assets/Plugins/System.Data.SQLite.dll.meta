@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 34afd3dfc3051f3438965ecf7bd8c8df
+guid: cb146aa7808536d4ba8e97c414931014
 PluginImporter:
   externalObjects: {}
   serializedVersion: 2
@@ -17,43 +17,13 @@ PluginImporter:
       enabled: 0
       settings:
         Exclude Android: 1
-        Exclude Editor: 1
+        Exclude Editor: 0
         Exclude Linux64: 1
         Exclude OSXUniversal: 1
         Exclude WebGL: 1
         Exclude Win: 1
         Exclude Win64: 1
         Exclude iOS: 1
-  - first:
-      : Linux
-    second:
-      enabled: 0
-      settings:
-        CPU: x86
-  - first:
-      : LinuxUniversal
-    second:
-      enabled: 0
-      settings:
-        CPU: None
-  - first:
-      : OSXIntel
-    second:
-      enabled: 0
-      settings:
-        CPU: AnyCPU
-  - first:
-      : OSXIntel64
-    second:
-      enabled: 0
-      settings:
-        CPU: None
-  - first:
-      : SamsungTV
-    second:
-      enabled: 0
-      settings:
-        STV_MODEL: STANDARD_13
   - first:
       Android: Android
     second:
@@ -68,11 +38,11 @@ PluginImporter:
   - first:
       Editor: Editor
     second:
-      enabled: 0
+      enabled: 1
       settings:
-        CPU: x86
+        CPU: AnyCPU
         DefaultValueInitialized: true
-        OS: Windows
+        OS: AnyOS
   - first:
       Standalone: Linux64
     second:
@@ -90,7 +60,7 @@ PluginImporter:
     second:
       enabled: 0
       settings:
-        CPU: AnyCPU
+        CPU: None
   - first:
       Standalone: Win64
     second:
@@ -98,15 +68,16 @@ PluginImporter:
       settings:
         CPU: None
   - first:
+      WebGL: WebGL
+    second:
+      enabled: 0
+      settings: {}
+  - first:
       Windows Store Apps: WindowsStoreApps
     second:
       enabled: 0
       settings:
         CPU: AnyCPU
-        DontProcess: False
-        PlaceholderPath: 
-        SDK: AnySDK
-        ScriptingBackend: AnyScriptingBackend
   - first:
       iPhone: iOS
     second:

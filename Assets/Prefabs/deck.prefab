@@ -130,6 +130,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Name: {fileID: 8500995075721012741}
+  StaplesCount: {fileID: 5020108621547830228}
   cardView: {fileID: 5547167570268606090, guid: d3d776b5f757e5d44972f683544b61c6,
     type: 3}
   contentRectTransform: {fileID: 6711723863230247676}
