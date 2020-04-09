@@ -1,4 +1,5 @@
 ﻿using TMPro;
+using UniRx;
 using UnityEngine;
 
 namespace deckmaster
@@ -15,7 +16,7 @@ namespace deckmaster
             CardView view = Instantiate(cardView);
             view.nameText.text = card.card.oracleCard.name;
             view.transform.SetParent(contentRectTransform);
-            //cardView.index.text = view.transform.GetSiblingIndex().ToString();
+            view.index.text = contentRectTransform.childCount.ToString();
         }
     }
 }

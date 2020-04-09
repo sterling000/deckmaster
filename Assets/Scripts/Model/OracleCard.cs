@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using deckmaster;
+using System;
 using System.Runtime.Serialization;
-using deckmaster;
 using Color = deckmaster.Color;
 
 [Serializable]
@@ -12,7 +11,6 @@ public class OracleCard
     public string[] superTypes;
 
     [IgnoreDataMember]
-    
     public Color ColorIdentity
     {
         get

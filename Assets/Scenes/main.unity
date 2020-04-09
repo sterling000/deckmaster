@@ -1315,3 +1315,52 @@ MonoBehaviour:
   loadingPanel: {fileID: 844483477}
   decks: 494301002b430100c6400100186a01003ad0020082b70100fb930500c1c40100ffa60500d24d0300374c02006b8e020047ce0500
   deckLists: []
+--- !u!1 &2072101832
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2072101834}
+  - component: {fileID: 2072101833}
+  m_Layer: 0
+  m_Name: Context (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!114 &2072101833
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2072101832}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f44fb4abb937764bae6b68f8b1dd197, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  deckViewPrefab: {fileID: 5645395238735512680, guid: f2550e39021f883459fb2d1257f4dae5,
+    type: 3}
+  contentRectTransform: {fileID: 1537716165}
+  loadingPanel: {fileID: 844483477}
+  decks: 186a01006b8e0200
+  deckLists: []
+--- !u!4 &2072101834
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2072101832}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
