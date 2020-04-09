@@ -5,8 +5,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
+using TMPro;
 using UniRx;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Context : MonoBehaviour
 {
@@ -16,6 +19,14 @@ public class Context : MonoBehaviour
 
     public GameObject loadingPanel;
 
+    public Button SlotsButton;
+
+    public TextMeshProUGUI SlotsText;
+    public GameObject DeckListScrollView;
+    public GameObject SlotsScrollView;
+
+    public Button RefreshButton;
+
     /// <summary>
     /// Until it's determined if we can request my list of decks from the archidekt api, i'll hard code the id's here.
     /// </summary>
@@ -23,9 +34,11 @@ public class Context : MonoBehaviour
 
     public List<DeckModel> deckLists;
 
+    public List<string> SlotsList;
+
     public HashSet<int> pendingDeckListRequests;
 
-    private List<IObservable<Unit>> threadList = new List<IObservable<Unit>>();
+    private List<IObservable<Unit>> threadList;
 
     // i wanted to use threads for my db access but the persistent data path only seems to be accessible from the main thread, so lets get it here and pass it along.
     private string PersistentDataPath;
@@ -34,18 +47,56 @@ public class Context : MonoBehaviour
     void Start()
     {
         PersistentDataPath = Application.persistentDataPath;
-        loadingPanel.SetActive(true);
+        //RefreshDecks(); 
+        RefreshButton.OnClickAsObservable().Subscribe(_ => RefreshDecks()); // todo: make sure it dispose of this later
+        SlotsButton.OnClickAsObservable().Subscribe(_ => ToggleSlotsPanel());
+    }
+
+    private void ToggleSlotsPanel()
+    {
+        DeckListScrollView.gameObject.SetActive(false);
+        SlotsScrollView.gameObject.SetActive(true);
         
+        StringBuilder builder = new StringBuilder();
+        for (var slot = 0; slot < SlotsList.Count; slot++)
+        {
+            string card = SlotsList[slot];
+            builder.AppendLine($"{slot+1} -> {card}");
+        }
+
+        SlotsText.text = builder.ToString();
+        builder.Clear();
+    }
+
+    private void RefreshDecks()
+    {
+        DeckListScrollView.gameObject.SetActive(true);
+        SlotsScrollView.gameObject.SetActive(false);
+        // todo: clear all the deckViews properly
+        for (int i = contentRectTransform.childCount - 1; i >= 0 ; i--)
+        {
+            GameObject.Destroy(contentRectTransform.GetChild(i));
+        }
+
+        SlotsButton.interactable = false;
+        deckLists?.Clear();
+        pendingDeckListRequests?.Clear();
+        threadList?.Clear();
+        loadingPanel.SetActive(true);
         /// todo:   load saved data
         ///         check timestamp
         ///         request new data
         ///         if new data analyze decks
         pendingDeckListRequests = new HashSet<int>();
-        decks.ToObservable().Subscribe(GetDeck);
-        Debug.Log($"threadList.Count: {threadList.Count}");
+        
+        decks.ToObservable().Subscribe(GetDeck, OnAllDecksCompleted);
+        // since we aren't using threads to get the decks in the editor, we are actually calling OnAllDecksCompleted here immediately.
+#if !UNITY_EDITOR
+        threadList = new List<IObservable<Unit>>();
         Observable.WhenAll(threadList.ToArray())
             .ObserveOnMainThread() // we have to observe on the main thread to call instantiate for now.
             .Subscribe(OnNextAllThreads, Debug.LogException, OnAllDecksCompleted);
+#endif
     }
 
     private void OnNextAllThreads(Unit obj)
@@ -107,7 +158,7 @@ public class Context : MonoBehaviour
         // cache our decklists
         DeckInfoDb deckListDB = new DeckInfoDb(PersistentDataPath);
         deckListDB.CreateOrUpdateData(new DeckInfoEntry(model.id, model.name)); // AddData will have conflicts
-        deckListDB.Close();
+        //deckListDB.Close();
     }
 
     private void OnAllDecksCompleted()
@@ -116,7 +167,6 @@ public class Context : MonoBehaviour
         // todo: broadcast this to the screencontroller and let it create these
         // todo: these for loops are probably not the fastest algorithm.
         DeckCardDb deckCardDb = new DeckCardDb(PersistentDataPath);
-        Debug.Log("Initializing DeckCardDB");
         // file our deckCardDb with cards
         foreach (var model in deckLists)
         {
@@ -156,7 +206,10 @@ public class Context : MonoBehaviour
             }
         }
 
+        SlotsList = deckCardDb.QuerySlotList();
+        deckCardDb.Close();
         loadingPanel.SetActive(false);
+        SlotsButton.interactable = true;
     }
 
     private DeckModel DeserializeDeck(string serializedDeckList)

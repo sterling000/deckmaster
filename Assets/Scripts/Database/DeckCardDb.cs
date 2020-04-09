@@ -119,6 +119,31 @@ namespace PersistentStorage
 
             return results;
         }
+
+        public List<string> QuerySlotList()
+        {
+            List<string> results = new List<string>();
+            using (IDbCommand cmd = GetDbCommand())
+            {
+                cmd.CommandText = "SELECT d1." + KEY_ID + ", d1." + KEY_NAME + ", " +
+                                  "(SELECT COUNT(*) from DeckCards d2 WHERE d2." + KEY_ID + " = " + "d1." + KEY_ID + ") as idcounter" +
+                                  " FROM  " + TABLE_NAME + " d1 " +
+                                  "WHERE idcounter > 1 GROUP BY " + KEY_ID + " ORDER BY idcounter desc;";
+                /*select d1.id, d1.name,
+    (select COUNT(*) from DeckCards d2 where d2.id = d1.id) as idcounter
+ from DeckCards d1 where idcounter > 1 group by id order by idcounter desc;*/
+
+                IDataReader reader = cmd.ExecuteReader();
+                int nameOrdinal = reader.GetOrdinal(KEY_NAME);
+                while (reader.Read())
+                {
+                    results.Add(reader.GetString(nameOrdinal));
+                }
+                reader.Close();
+            }
+
+            return results;
+        }
     }
 }
 
