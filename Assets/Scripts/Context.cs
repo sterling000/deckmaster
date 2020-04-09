@@ -57,7 +57,7 @@ public class Context : MonoBehaviour
     {
         DeckListScrollView.gameObject.SetActive(false);
         SlotsScrollView.gameObject.SetActive(true);
-        SlotsList.Clear();
+        
         StringBuilder builder = new StringBuilder();
         for (var slot = 0; slot < SlotsList.Count; slot++)
         {
@@ -73,6 +73,7 @@ public class Context : MonoBehaviour
     {
         DeckListScrollView.gameObject.SetActive(true);
         SlotsScrollView.gameObject.SetActive(false);
+        SlotsList.Clear();
         // todo: clear all the deckViews properly
         for (int i = contentRectTransform.childCount - 1; i >= 0 ; i--)
         {

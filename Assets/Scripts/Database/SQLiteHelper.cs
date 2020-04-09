@@ -1,7 +1,7 @@
-﻿//using Mono.Data.Sqlite;
+﻿using Mono.Data.Sqlite;
 using System.Data;
 using UnityEngine;
-using System.Data.SQLite;
+//using System.Data.SQLite;
 
 namespace PersistentStorage
 {
@@ -18,7 +18,7 @@ namespace PersistentStorage
             dbConnectionString = $"URI=file:{persistentDataPath}/{dbName}";
             Debug.Log($"dbConnectionString: {dbConnectionString}");
 
-            dbConnection = new SQLiteConnection(dbConnectionString);
+            dbConnection = new SqliteConnection(dbConnectionString);
             dbConnection.Open();
         }
 

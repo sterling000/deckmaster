@@ -72,16 +72,27 @@ namespace PersistentStorage
         public Dictionary<int, int> QueryStaples()
         {
             IDbCommand cmd = GetDbCommand();
-            cmd.CommandText = "WITH counted AS " +
-                                "(SELECT deck, " +
-                                    "(SELECT count(*) " +
-                                    "FROM " + TABLE_NAME + " AS d2 " +
-                                    "WHERE d.id = d2.id) as cnt " +
-                                "FROM " + TABLE_NAME + " AS d) " +
-                              "SELECT deck, sum(cnt > 1) AS Duplicates " +
-                              "FROM counted " +
-                              "GROUP BY deck " +
-                              "ORDER BY Duplicates DESC;";
+            cmd.CommandText = "SELECT " + KEY_DECK + ", "
+                              + "SUM(case when cnt > 1 then 1 else 0 end) cnt "
+                              + "FROM ( "
+                              + "SELECT " + KEY_DECK + ", "
+                              + "(SELECT count(*) from " + TABLE_NAME + " t1 where t1." + KEY_ID + " = t." + KEY_ID +
+                              ") cnt "
+                              + "FROM " + TABLE_NAME + " t "
+                              + ") t "
+                              + "GROUP BY " + KEY_DECK + ";";
+
+                              // the following query uses window functions, not available until SQLite 3.25
+            // cmd.CommandText = "WITH counted AS " +
+            //                     "(SELECT deck, " +
+            //                         "(SELECT count(*) " +
+            //                         "FROM " + TABLE_NAME + " AS d2 " +
+            //                         "WHERE d.id = d2.id) as cnt " +
+            //                     "FROM " + TABLE_NAME + " AS d) " +
+            //                   "SELECT deck, sum(cnt > 1) AS Duplicates " +
+            //                   "FROM counted " +
+            //                   "GROUP BY deck " +
+            //                   "ORDER BY Duplicates DESC;";
 
             IDataReader reader = cmd.ExecuteReader();
             Dictionary<int, int> results = new Dictionary<int, int>();
