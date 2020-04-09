@@ -12,7 +12,6 @@ public class rotatetotate : MonoBehaviour {
     void Start () {
         rectComponent = GetComponent<RectTransform>();
         imageComp = rectComponent.GetComponent<Image>();
-
     }
 	
 	// Update is called once per frame

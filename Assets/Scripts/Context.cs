@@ -2,7 +2,6 @@
 using PersistentStorage;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -18,13 +17,14 @@ public class Context : MonoBehaviour
 
     public RectTransform contentRectTransform;
 
-    public GameObject loadingPanel;
+    public rotatetotate loadingSymbol;
 
     public Button SlotsButton;
 
     public TextMeshProUGUI SlotsText;
     public GameObject DeckListScrollView;
     public GameObject SlotsScrollView;
+    public Toggle JsonToggle;
 
     public Button RefreshButton;
 
@@ -38,9 +38,7 @@ public class Context : MonoBehaviour
     public List<string> SlotsList;
 
     public HashSet<int> pendingDeckListRequests;
-#if UNITY_EDITOR
     private List<IObservable<Unit>> threadList;
-#endif
     // i wanted to use threads for my db access but the persistent data path only seems to be accessible from the main thread, so lets get it here and pass it along.
     private string PersistentDataPath;
     
@@ -48,29 +46,17 @@ public class Context : MonoBehaviour
     void Start()
     {
         PersistentDataPath = Application.persistentDataPath;
+        JsonToggle.isOn = GnarlyMenuItems.IsEnabled;
+        JsonToggle.OnValueChangedAsObservable().Subscribe(b => GnarlyMenuItems.IsEnabled = b);
         //RefreshDecks(); 
         RefreshButton.OnClickAsObservable().Subscribe(_ => RefreshDecks()); // todo: make sure it dispose of this later
         SlotsButton.OnClickAsObservable().Subscribe(_ => ToggleSlotsPanel());
     }
 
-    private void ToggleSlotsPanel()
-    {
-        DeckListScrollView.gameObject.SetActive(false);
-        SlotsScrollView.gameObject.SetActive(true);
-        
-        StringBuilder builder = new StringBuilder();
-        for (var slot = 0; slot < SlotsList.Count; slot++)
-        {
-            string card = SlotsList[slot];
-            builder.AppendLine($"{slot+1} -> {card}");
-        }
-
-        SlotsText.text = builder.ToString();
-        builder.Clear();
-    }
-
     private void RefreshDecks()
     {
+        loadingSymbol.rotateSpeed = 200;
+        RefreshButton.interactable = false;
         DeckListScrollView.gameObject.SetActive(true);
         SlotsScrollView.gameObject.SetActive(false);
         SlotsList.Clear();
@@ -83,27 +69,30 @@ public class Context : MonoBehaviour
         SlotsButton.interactable = false;
         deckLists?.Clear();
         pendingDeckListRequests?.Clear();
-#if UNITY_EDITOR
         threadList?.Clear();
-#endif
-        loadingPanel.SetActive(true);
-        /// todo:   load saved data
-        ///         check timestamp
-        ///         request new data
-        ///         if new data analyze decks
-        pendingDeckListRequests = new HashSet<int>();
-        
-        
-        // since we aren't using threads to get the decks in the editor, we are actually calling OnAllDecksCompleted here immediately.
-#if UNITY_EDITOR
-        threadList = new List<IObservable<Unit>>();
-        decks.ToObservable().Subscribe(GetDeck);
-        Observable.WhenAll(threadList.ToArray())
-            .ObserveOnMainThread() // we have to observe on the main thread to call instantiate for now.
-            .Subscribe(OnNextAllThreads, Debug.LogException, OnAllDecksCompleted);
-#else
-        decks.ToObservable().Subscribe(GetDeck, OnAllDecksCompleted);
-#endif
+        //loadingPanel.SetActive(true);
+        Observable.NextFrame().Subscribe(_ =>
+        {
+            /// todo:   load saved data
+            ///         check timestamp
+            ///         request new data
+            ///         if new data analyze decks
+            pendingDeckListRequests = new HashSet<int>();
+
+            // since we aren't using threads to get the decks in the editor, we are actually calling OnAllDecksCompleted here immediately.
+            if (GnarlyMenuItems.IsEnabled)
+            {
+                decks.ToObservable().Subscribe(GetDeck, OnAllDecksCompleted);
+            }
+            else
+            {
+                threadList = new List<IObservable<Unit>>();
+                decks.ToObservable().Subscribe(GetDeck);
+                Observable.WhenAll(threadList.ToArray())
+                    .ObserveOnMainThread() // we have to observe on the main thread to call instantiate for now.
+                    .Subscribe(OnNextAllThreads, Debug.LogException, OnAllDecksCompleted);
+            }
+        });
     }
 
     private void OnNextAllThreads(Unit obj)
@@ -116,35 +105,38 @@ public class Context : MonoBehaviour
         Debug.Log($"Getting Deck: {id}");
         if (pendingDeckListRequests.Add(id))
         {
-#if !UNITY_EDITOR // todo: instead should use an interface with a data provider
-            TextAsset asset = Resources.Load<TextAsset>($"{id}");
-            ParseDeckList(asset.text);
-#else
-            var getDeck = Observable.Start(() =>
+            if (GnarlyMenuItems.IsEnabled)
             {
-                var webRequest = WebRequest.Create($"https://archidekt.com/api/decks/{id}/") as HttpWebRequest;
-                if (webRequest != null)
+                TextAsset asset = Resources.Load<TextAsset>($"{id}");
+                ParseDeckList(asset.text);
+            }
+            else
+            {
+                var getDeck = Observable.Start(() =>
                 {
-                    webRequest.Method = WebRequestMethods.Http.Get;
-
-                    HttpWebResponse response;
-                    try
+                    var webRequest = WebRequest.Create($"https://archidekt.com/api/decks/{id}/") as HttpWebRequest;
+                    if (webRequest != null)
                     {
-                        response = webRequest.GetResponse() as HttpWebResponse;
-                    }
-                    catch (WebException ex)
-                    {
-                        Debug.LogError(ex.Message);
-                        return;
-                    }
+                        webRequest.Method = WebRequestMethods.Http.Get;
 
-                    OnNextDeck(response);
-                    response?.GetResponseStream()?.Dispose();
-                }
-            });
-            
-            threadList.Add(getDeck);
-#endif
+                        HttpWebResponse response;
+                        try
+                        {
+                            response = webRequest.GetResponse() as HttpWebResponse;
+                        }
+                        catch (WebException ex)
+                        {
+                            Debug.LogError(ex.Message);
+                            return;
+                        }
+
+                        OnNextDeck(response);
+                        response?.GetResponseStream()?.Dispose();
+                    }
+                });
+
+                threadList.Add(getDeck);
+            }
         }
     }
 
@@ -220,15 +212,30 @@ public class Context : MonoBehaviour
         {
             SlotsList.Add(deckCardDb.GetNameById(id));   
         }
-        
+        StringBuilder builder = new StringBuilder();
+        for (var slot = 0; slot < SlotsList.Count; slot++)
+        {
+            string card = SlotsList[slot];
+            builder.AppendLine($"{slot + 1} -> {card}");
+        }
+
+        SlotsText.text = builder.ToString();
+        builder.Clear();
         //slotDb.CreateOrUpdateData(slotEntries);
         deckCardDb.Close();
-        loadingPanel.SetActive(false);
+        loadingSymbol.rotateSpeed = 0;
+        RefreshButton.interactable = true;
         SlotsButton.interactable = true;
     }
 
     private DeckModel DeserializeDeck(string serializedDeckList)
     {
         return JsonUtility.FromJson<DeckModel>(serializedDeckList);
+    }
+
+    private void ToggleSlotsPanel()
+    {
+        DeckListScrollView.gameObject.SetActive(!DeckListScrollView.gameObject.activeInHierarchy);
+        SlotsScrollView.gameObject.SetActive(!SlotsScrollView.gameObject.activeInHierarchy);
     }
 }
