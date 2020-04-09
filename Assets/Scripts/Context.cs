@@ -57,7 +57,7 @@ public class Context : MonoBehaviour
     {
         DeckListScrollView.gameObject.SetActive(false);
         SlotsScrollView.gameObject.SetActive(true);
-        
+        SlotsList.Clear();
         StringBuilder builder = new StringBuilder();
         for (var slot = 0; slot < SlotsList.Count; slot++)
         {
@@ -76,7 +76,7 @@ public class Context : MonoBehaviour
         // todo: clear all the deckViews properly
         for (int i = contentRectTransform.childCount - 1; i >= 0 ; i--)
         {
-            GameObject.Destroy(contentRectTransform.GetChild(i));
+            GameObject.Destroy(contentRectTransform.GetChild(i).gameObject);
         }
 
         SlotsButton.interactable = false;
