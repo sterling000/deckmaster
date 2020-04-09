@@ -2,6 +2,7 @@
 using PersistentStorage;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -37,9 +38,9 @@ public class Context : MonoBehaviour
     public List<string> SlotsList;
 
     public HashSet<int> pendingDeckListRequests;
-
+#if UNITY_EDITOR
     private List<IObservable<Unit>> threadList;
-
+#endif
     // i wanted to use threads for my db access but the persistent data path only seems to be accessible from the main thread, so lets get it here and pass it along.
     private string PersistentDataPath;
     
@@ -81,7 +82,9 @@ public class Context : MonoBehaviour
         SlotsButton.interactable = false;
         deckLists?.Clear();
         pendingDeckListRequests?.Clear();
+#if UNITY_EDITOR
         threadList?.Clear();
+#endif
         loadingPanel.SetActive(true);
         /// todo:   load saved data
         ///         check timestamp
@@ -89,13 +92,16 @@ public class Context : MonoBehaviour
         ///         if new data analyze decks
         pendingDeckListRequests = new HashSet<int>();
         
-        decks.ToObservable().Subscribe(GetDeck, OnAllDecksCompleted);
+        
         // since we aren't using threads to get the decks in the editor, we are actually calling OnAllDecksCompleted here immediately.
-#if !UNITY_EDITOR
+#if UNITY_EDITOR
         threadList = new List<IObservable<Unit>>();
+        decks.ToObservable().Subscribe(GetDeck);
         Observable.WhenAll(threadList.ToArray())
             .ObserveOnMainThread() // we have to observe on the main thread to call instantiate for now.
             .Subscribe(OnNextAllThreads, Debug.LogException, OnAllDecksCompleted);
+#else
+        decks.ToObservable().Subscribe(GetDeck, OnAllDecksCompleted);
 #endif
     }
 
@@ -109,7 +115,7 @@ public class Context : MonoBehaviour
         Debug.Log($"Getting Deck: {id}");
         if (pendingDeckListRequests.Add(id))
         {
-#if UNITY_EDITOR // todo: instead should use an interface with a data provider
+#if !UNITY_EDITOR // todo: instead should use an interface with a data provider
             TextAsset asset = Resources.Load<TextAsset>($"{id}");
             ParseDeckList(asset.text);
 #else
@@ -186,6 +192,9 @@ public class Context : MonoBehaviour
 
         //query the db for staples
         Dictionary<int, int> staples = deckCardDb.QueryStaples();
+        List<int> slotList = deckCardDb.QuerySlotList();
+        // CardSlotDb slotDb = new CardSlotDb(PersistentDataPath);
+        // List<CardSlotEntry> slotEntries = new List<CardSlotEntry>();
         
         // create our decklist views
         foreach (var deckModel in deckLists)
@@ -201,12 +210,17 @@ public class Context : MonoBehaviour
                 CardModel cardModel = deckModel.cards.ToList().Find(card => card.card.id == staple);
                 if (cardModel != null)
                 {
-                    deckView.AddCard(cardModel);
+                    deckView.AddCard(cardModel, slotList.IndexOf(cardModel.card.id)+1);
                 }
             }
         }
 
-        SlotsList = deckCardDb.QuerySlotList();
+        foreach (int id in slotList)
+        {
+            SlotsList.Add(deckCardDb.GetNameById(id));   
+        }
+        
+        //slotDb.CreateOrUpdateData(slotEntries);
         deckCardDb.Close();
         loadingPanel.SetActive(false);
         SlotsButton.interactable = true;

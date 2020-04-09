@@ -1,7 +1,4 @@
-﻿using UnityEngine;
-using System.Collections;
-
-namespace PersistentStorage
+﻿namespace PersistentStorage
 {
     public class DeckInfoEntry
     {

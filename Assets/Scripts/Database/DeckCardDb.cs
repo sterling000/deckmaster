@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
-using Debug = UnityEngine.Debug;
 
 namespace PersistentStorage
 {
@@ -56,22 +54,19 @@ namespace PersistentStorage
             }
         }
 
-        public void CreateOrUpdateData(CardEntry card)
+        public string GetNameById(int id)
         {
-            using (IDbCommand cmd = GetDbCommand())
+            IDbCommand cmd = GetDbCommand();
+            cmd.CommandText = "SELECT * FROM " + TABLE_NAME + " WHERE " + KEY_ID + " = " + $"{id};";
+            IDataReader reader = cmd.ExecuteReader();
+            int ordinal = reader.GetOrdinal("name");
+            string name = string.Empty;
+            while (reader.Read())
             {
-                cmd.CommandText = "INSERT OR REPLACE INTO " + TABLE_NAME
-                                                            + " ( "
-                                                            + KEY_ID + ", "
-                                                            + KEY_DECK + ", "
-                                                            + KEY_DATE_UPDATED + " ) "
+                name = reader.GetString(ordinal);
+            }
 
-                                                            + "VALUES ( "
-                                                            + card.Id + ", "
-                                                            + card.DeckId + ", "
-                                                            + "CURRENT_TIMESTAMP ); ";
-                cmd.ExecuteNonQuery(); 
-            }  
+            return name;
         }
 
         public Dictionary<int, int> QueryStaples()
@@ -120,24 +115,20 @@ namespace PersistentStorage
             return results;
         }
 
-        public List<string> QuerySlotList()
+        public List<int> QuerySlotList()
         {
-            List<string> results = new List<string>();
+            List<int> results = new List<int>();
             using (IDbCommand cmd = GetDbCommand())
             {
                 cmd.CommandText = "SELECT d1." + KEY_ID + ", d1." + KEY_NAME + ", " +
                                   "(SELECT COUNT(*) from DeckCards d2 WHERE d2." + KEY_ID + " = " + "d1." + KEY_ID + ") as idcounter" +
                                   " FROM  " + TABLE_NAME + " d1 " +
                                   "WHERE idcounter > 1 GROUP BY " + KEY_ID + " ORDER BY idcounter desc;";
-                /*select d1.id, d1.name,
-    (select COUNT(*) from DeckCards d2 where d2.id = d1.id) as idcounter
- from DeckCards d1 where idcounter > 1 group by id order by idcounter desc;*/
 
                 IDataReader reader = cmd.ExecuteReader();
-                int nameOrdinal = reader.GetOrdinal(KEY_NAME);
                 while (reader.Read())
                 {
-                    results.Add(reader.GetString(nameOrdinal));
+                    results.Add(reader.GetInt32(0));
                 }
                 reader.Close();
             }
