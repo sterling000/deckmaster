@@ -48,7 +48,6 @@ public class Context : MonoBehaviour
         PersistentDataPath = Application.persistentDataPath;
         JsonToggle.isOn = GnarlyMenuItems.IsEnabled;
         JsonToggle.OnValueChangedAsObservable().Subscribe(b => GnarlyMenuItems.IsEnabled = b);
-        //RefreshDecks(); 
         RefreshButton.OnClickAsObservable().Subscribe(_ => RefreshDecks()); // todo: make sure it dispose of this later
         SlotsButton.OnClickAsObservable().Subscribe(_ => ToggleSlotsPanel());
     }
@@ -63,14 +62,13 @@ public class Context : MonoBehaviour
         // todo: clear all the deckViews properly
         for (int i = contentRectTransform.childCount - 1; i >= 0 ; i--)
         {
-            GameObject.Destroy(contentRectTransform.GetChild(i).gameObject);
+            Destroy(contentRectTransform.GetChild(i).gameObject);
         }
 
         SlotsButton.interactable = false;
         deckLists?.Clear();
         pendingDeckListRequests?.Clear();
         threadList?.Clear();
-        //loadingPanel.SetActive(true);
         Observable.NextFrame().Subscribe(_ =>
         {
             /// todo:   load saved data
@@ -175,7 +173,7 @@ public class Context : MonoBehaviour
             {
                 bool hasBasicSuperType = cardModel.card.oracleCard.SuperTypes.HasFlag(SuperTypes.Basic);
                 return ! hasBasicSuperType && cardModel.Category != Category.Maybeboard && cardModel.Category != Category.Sideboard;
-            });
+            }).OrderBy(cardModel => cardModel.Category);
             foreach (CardModel card in filteredCards) 
             {
                 cardEntries.Add(new CardEntry(card.card.id, card.card.oracleCard.name, model.id));
@@ -186,8 +184,6 @@ public class Context : MonoBehaviour
         //query the db for staples
         Dictionary<int, int> staples = deckCardDb.QueryStaples();
         List<int> slotList = deckCardDb.QuerySlotList();
-        // CardSlotDb slotDb = new CardSlotDb(PersistentDataPath);
-        // List<CardSlotEntry> slotEntries = new List<CardSlotEntry>();
         
         // create our decklist views
         foreach (var deckModel in deckLists)
@@ -221,7 +217,6 @@ public class Context : MonoBehaviour
 
         SlotsText.text = builder.ToString();
         builder.Clear();
-        //slotDb.CreateOrUpdateData(slotEntries);
         deckCardDb.Close();
         loadingSymbol.rotateSpeed = 0;
         RefreshButton.interactable = true;

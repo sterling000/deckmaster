@@ -20,22 +20,26 @@ namespace deckmaster
         Green = (1 << 5)
     }
 
+    [Flags]
     public enum Category
     {
-        Undefined,
-        Land,
-        Creature,
-        Instant,
-        Sorcery,
-        Artifact,
-        Enchantment,
-        Planeswalker,
-        Commander,
-        Draw,
-        Ramp,
-        Interaction,
-        Maybeboard,
-        Sideboard
+        Undefined = (1 << 0),
+        Land = (1 << 1),
+        Draw = (1 << 2),
+        Ramp = (1 << 3),
+        Interaction = (1 << 4),
+        Tutor = (1 << 5),
+        Boardwipe = (1 << 6),
+        Wincon = (1 << 7),
+        Creature = (1 << 8),
+        Instant = (1 << 9),
+        Sorcery = (1 << 10),
+        Artifact = (1 << 11),
+        Enchantment = (1 << 12),
+        Planeswalker = (1 << 13),
+        Commander = (1 << 14),
+        Maybeboard = (1 << 15),
+        Sideboard = (1 << 16)
     }
 
     public enum CardTypes
