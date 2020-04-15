@@ -22,13 +22,8 @@ namespace deckmaster
         public string name;
 
         /// <summary>
-        /// A description of the deck.
+        /// The filtered list of card id's that represent the staples.
         /// </summary>
-        public string description;
-
-        /// <summary>
-        /// The last time the deck was updated on the server
-        /// </summary>
-        public string updatedAt;
+        public List<int> Staples;
     }
 }

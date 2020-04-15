@@ -1079,15 +1079,16 @@ MonoBehaviour:
       m_Calls: []
   m_text: Local Json
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: c0a54007bbed1d94fb494bbffc2c8287, type: 2}
+  m_sharedMaterial: {fileID: -5206116232543887215, guid: c0a54007bbed1d94fb494bbffc2c8287,
+    type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1304,6 +1305,7 @@ GameObject:
   - component: {fileID: 1537716165}
   - component: {fileID: 1537716166}
   - component: {fileID: 1537716167}
+  - component: {fileID: 1537716168}
   m_Layer: 5
   m_Name: Content
   m_TagString: Untagged
@@ -1369,6 +1371,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 0
   m_VerticalFit: 2
+--- !u!114 &1537716168
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1537716164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cbe035318ab2df4ebdc7c51ed45d6f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 5645395238735512680, guid: f2550e39021f883459fb2d1257f4dae5, type: 3}
+  PreloadCount: 15
+  PreloadThreshold: 5
 --- !u!1 &1582500015
 GameObject:
   m_ObjectHideFlags: 0
@@ -1531,15 +1548,16 @@ MonoBehaviour:
       m_Calls: []
   m_text: My Decks
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: c329e9765957f9649956968a38740c32, type: 2}
+  m_sharedMaterial: {fileID: -6562409475191047210, guid: c329e9765957f9649956968a38740c32,
+    type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1557,7 +1575,7 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 98
+  m_fontSize: 100
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -2201,8 +2219,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f44fb4abb937764bae6b68f8b1dd197, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  deckViewPrefab: {fileID: 5645395238735512680, guid: f2550e39021f883459fb2d1257f4dae5,
-    type: 3}
+  deckPresenter: {fileID: 1537716168}
   contentRectTransform: {fileID: 1537716165}
   loadingSymbol: {fileID: 1683315851}
   SlotsButton: {fileID: 168894823}
@@ -2211,8 +2228,7 @@ MonoBehaviour:
   SlotsScrollView: {fileID: 1582500015}
   JsonToggle: {fileID: 236064440}
   RefreshButton: {fileID: 1933436746}
-  decks: 
-  deckLists: []
+  decks: 494301002b430100c6400100186a01003ad0020082b70100fb930500c1c40100ffa60500d24d0300374c02006b8e020047ce0500
   SlotsList: []
 --- !u!1 &1933436743
 GameObject:

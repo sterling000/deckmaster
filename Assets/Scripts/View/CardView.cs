@@ -1,11 +1,20 @@
 ﻿using TMPro;
 using UnityEngine;
 
-public class CardView : MonoBehaviour
+namespace deckmaster
 {
-    public TextMeshProUGUI index;
+    public class CardView : MonoBehaviour
+    {
+        public CardModel Model;
+        
+        public TextMeshProUGUI nameText;
 
-    public TextMeshProUGUI nameText;
+        public TextMeshProUGUI slotText;
 
-    public TextMeshProUGUI slotText;
+        void OnEnable()
+        {
+            nameText.text = Model.card.oracleCard.name;
+        }
+    }
 }
+

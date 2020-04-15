@@ -12,16 +12,13 @@ using UnityEngine.UI;
 
 public class Context : MonoBehaviour
 {
-    public DeckView deckViewPrefab;
-
-    public RectTransform contentRectTransform;
-
+    public DeckPresenter deckPresenter;
+    
     public rotatetotate loadingSymbol;
 
     public Button SlotsButton;
 
     public TextMeshProUGUI SlotsText;
-    public GameObject DeckListScrollView;
     public GameObject SlotsScrollView;
     public Toggle JsonToggle;
 
@@ -30,7 +27,7 @@ public class Context : MonoBehaviour
     [SerializeField]
     private List<int> decks;
 
-    public List<DeckModel> deckLists;
+    private List<DeckModel> deckLists;
 
     public List<string> SlotsList;
 
@@ -52,6 +49,7 @@ public class Context : MonoBehaviour
     void Start()
     {
         cts = new CancellationTokenSource();
+        deckLists = new List<DeckModel>();
         PersistentDataPath = Application.persistentDataPath;
         JsonToggle.isOn = GnarlyMenuItems.IsEnabled;
         JsonToggle.OnValueChangedAsObservable().Subscribe(b => GnarlyMenuItems.IsEnabled = b);
@@ -72,9 +70,10 @@ public class Context : MonoBehaviour
     {
         loadingSymbol.rotateSpeed = 200;
         RefreshButton.interactable = false;
-        DeckListScrollView.gameObject.SetActive(true);
+        deckPresenter.gameObject.SetActive(true);
         SlotsScrollView.gameObject.SetActive(false);
         SlotsList.Clear();
+        deckPresenter.Clear();
 
         SlotsButton.interactable = false;
 
@@ -211,25 +210,38 @@ public class Context : MonoBehaviour
         //query the db for staples
         Dictionary<int, int> staples = deckCardDb.QueryStaples();
         List<int> slotList = deckCardDb.QuerySlotList();
-        
-        // create our decklist views
-        foreach (var deckModel in deckLists)
-        {
-            DeckView deckView = Instantiate(deckViewPrefab);
-            deckView.transform.SetParent(contentRectTransform);
-            deckView.Name.text = deckModel.name;
-            deckView.StaplesCount.text = staples[deckModel.id].ToString();
 
-            List<int> deckStaples = deckCardDb.QueryDeckStaples(deckModel.id);
-            foreach (int staple in deckStaples)
-            {
-                CardModel cardModel = deckModel.cards.ToList().Find(card => card.card.id == staple);
-                if (cardModel != null)
-                {
-                    deckView.AddCard(cardModel, slotList.IndexOf(cardModel.card.id)+1);
-                }
-            }
+        foreach (DeckModel deckModel in deckLists)
+        {
+
+            deckPresenter.Create(deckModel);
+            deckModel.Staples = deckCardDb.QueryDeckStaples(deckModel.id);
+            // List<int> deckStaples = deckCardDb.QueryDeckStaples(deckModel.id);
+            // foreach (int staple in deckStaples)
+            // {
+            //     
+            // }
         }
+
+        // create our decklist views
+        // foreach (var deckModel in deckLists)
+        // {
+        //
+        //     DeckView deckView = Instantiate(deckViewPrefab);
+        //     deckView.transform.SetParent(contentRectTransform);
+        //     deckView.Name.text = deckModel.name;
+        //     deckView.StaplesCount.text = staples[deckModel.id].ToString();
+        //
+        //     List<int> deckStaples = deckCardDb.QueryDeckStaples(deckModel.id);
+        //     foreach (int staple in deckStaples)
+        //     {
+        //         CardModel cardModel = deckModel.cards.ToList().Find(card => card.card.id == staple);
+        //         if (cardModel != null)
+        //         {
+        //             deckView.AddCard(cardModel, slotList.IndexOf(cardModel.card.id)+1);
+        //         }
+        //     }
+        // }
 
         foreach (int id in slotList)
         {
@@ -257,7 +269,7 @@ public class Context : MonoBehaviour
 
     private void ToggleSlotsPanel()
     {
-        DeckListScrollView.gameObject.SetActive(!DeckListScrollView.gameObject.activeInHierarchy);
+        deckPresenter.gameObject.SetActive(!deckPresenter.gameObject.activeInHierarchy);
         SlotsScrollView.gameObject.SetActive(!SlotsScrollView.gameObject.activeInHierarchy);
     }
 

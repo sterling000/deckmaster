@@ -1,5 +1,4 @@
 ﻿using System;
-using UniRx;
 
 namespace deckmaster
 {
@@ -9,6 +8,7 @@ namespace deckmaster
         public CardData card;
         public int quantity;
         public string category;
+        public int slot;
 
         public Category Category
         {
