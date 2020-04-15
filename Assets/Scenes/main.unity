@@ -1329,7 +1329,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: -0.00024414062}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1537716166
@@ -2220,11 +2220,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   deckPresenter: {fileID: 1537716168}
-  contentRectTransform: {fileID: 1537716165}
   loadingSymbol: {fileID: 1683315851}
   SlotsButton: {fileID: 168894823}
   SlotsText: {fileID: 53974827}
-  DeckListScrollView: {fileID: 1868147827}
   SlotsScrollView: {fileID: 1582500015}
   JsonToggle: {fileID: 236064440}
   RefreshButton: {fileID: 1933436746}

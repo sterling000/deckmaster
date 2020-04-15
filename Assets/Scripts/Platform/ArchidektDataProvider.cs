@@ -11,7 +11,7 @@ namespace deckmaster
     {
         private CompositeDisposable disposables = new CompositeDisposable();
 
-        public override async UniTaskVoid GetUserModelTask(Subject<UserModel> subject)
+        public override async UniTask GetUserModelTask(Subject<UserModel> subject)
         {
             
             var webRequest = WebRequest.Create($"https://archidekt.com/api/decks/cards/?orderBy=-createdAt&owner=Wildcard&ownerexact=true&pageSize=50") as HttpWebRequest;
@@ -35,39 +35,6 @@ namespace deckmaster
             }
         }
 
-        public override void GetUserModelThreaded(Subject<UserModel> subject)
-        {
-            Observable.Start(() =>
-            {
-                var webRequest = WebRequest.Create($"https://archidekt.com/api/decks/cards/?orderBy=-createdAt&owner=Wildcard&ownerexact=true&pageSize=50") as HttpWebRequest;
-
-                if (webRequest != null)
-                {
-                    webRequest.Method = WebRequestMethods.Http.Get;
-
-                    HttpWebResponse response;
-                    try
-                    {
-                        response = webRequest.GetResponse() as HttpWebResponse;
-                    }
-                    catch (WebException ex)
-                    {
-                        Debug.LogError(ex.Message);
-                        return;
-                    }
-
-                    using (StreamReader reader = new StreamReader(response.GetResponseStream()))
-                    {
-                        UserModel model = ParseUserModel(reader.ReadToEnd());
-                        // todo: publish a message that we loaded the deck ids? or use a callback?
-                        subject.OnNext(model);
-                    }
-
-                    response?.GetResponseStream()?.Dispose();
-                }
-            }).Subscribe(OnNextUserData, OnUserDataError, OnUserDataComplete).AddTo(disposables);
-        }
-
         private void OnNextUserData(Unit obj)
         {
             Debug.Log($"OnNextUserData");
@@ -83,34 +50,29 @@ namespace deckmaster
             Debug.Log($"OnUserDataComplete");
         }
 
-        public override void GetDeckModel(int id, ReplaySubject<DeckModel> subject)
+        public override async UniTask GetDeckModelTask(int id, ReplaySubject<DeckModel> subject)
         {
-            var getDeck = Observable.Start(() =>
-            {
-                var webRequest = WebRequest.Create($"https://archidekt.com/api/decks/{id}/") as HttpWebRequest;
-                if (webRequest != null)
-                {
-                    webRequest.Method = WebRequestMethods.Http.Get;
+            
+            var webRequest = WebRequest.Create($"https://archidekt.com/api/decks/{id}/") as HttpWebRequest;
+            
+            webRequest.Method = WebRequestMethods.Http.Get;
 
-                    HttpWebResponse response;
-                    try
-                    {
-                        response = webRequest.GetResponse() as HttpWebResponse;
-                    }
-                    catch (WebException ex)
-                    {
-                        Debug.LogError(ex.Message);
-                        return;
-                    }
-                    
+            try
+            {
+                using (HttpWebResponse response = await webRequest.GetResponseAsync() as HttpWebResponse)
+                {
                     using (StreamReader reader = new StreamReader(response.GetResponseStream()))
                     {
                         DeckModel model = ParseDeckModel(reader.ReadToEnd());
                         subject.OnNext(model);
                     }
-                    response?.GetResponseStream()?.Dispose();
                 }
-            }).Subscribe(OnNextDeckList, OnDeckListError, OnDeckListComplete);
+            }
+            catch (WebException ex)
+            {
+                Debug.LogError(ex.Message);
+                return;
+            }
         }
 
         private void OnNextDeckList(Unit obj)

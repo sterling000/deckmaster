@@ -9,6 +9,7 @@ public class OracleCard
     public string[] colorIdentity;
     public string name;
     public string[] superTypes;
+    public string[] types;
 
     [IgnoreDataMember]
     public Color ColorIdentity
@@ -31,6 +32,7 @@ public class OracleCard
         }
     }
 
+    [IgnoreDataMember]
     public SuperTypes SuperTypes
     {
         get
@@ -43,6 +45,26 @@ public class OracleCard
                 {
                     result |= temp;
                     result &= ~SuperTypes.Undefined;
+                }
+            }
+
+            return result;
+        }
+    }
+
+    [IgnoreDataMember]
+    public CardTypes CardTypes
+    {
+        get
+        {
+            CardTypes result = CardTypes.Undefined;
+            foreach (string cardType in types)
+            {
+                CardTypes temp;
+                if (Enum.TryParse(cardType, out temp))
+                {
+                    result |= temp;
+                    result &= ~CardTypes.Undefined;
                 }
             }
 

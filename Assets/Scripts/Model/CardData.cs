@@ -42,16 +42,17 @@ namespace deckmaster
         Sideboard = (1 << 16)
     }
 
+    [Flags]
     public enum CardTypes
     {
-        Undefined,
-        Land,
-        Creature,
-        Instant,
-        Sorcery,
-        Artifact,
-        Enchantment,
-        Planeswalker
+        Undefined = (1 << 0),
+        Land = (1 << 1),
+        Creature = (1 << 2),
+        Instant = (1 << 3),
+        Sorcery = (1 << 4),
+        Artifact = (1 << 5),
+        Enchantment = (1 << 6),
+        Planeswalker = (1 << 7)
     }
 
     public enum SubTypes

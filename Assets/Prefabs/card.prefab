@@ -18,7 +18,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4732650097760240484
 RectTransform:
   m_ObjectHideFlags: 0
@@ -585,7 +585,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a68c4b6ad77df24ba97a06e8cd212be, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  index: {fileID: 1131242310367012050}
+  Model:
+    card:
+      id: 0
+      oracleCard:
+        colorIdentity: []
+        name: 
+        superTypes: []
+        types: []
+    quantity: 0
+    category: 
+    slot: 0
   nameText: {fileID: 8559213819639416606}
   slotText: {fileID: 927683553129837441}
 --- !u!114 &4360272422541220675

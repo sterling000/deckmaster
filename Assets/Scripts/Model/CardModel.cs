@@ -14,9 +14,19 @@ namespace deckmaster
         {
             get
             {
-                Category result = Category.Undefined;
-                Category.TryParse(category, out result);
+                if (!Enum.TryParse(category, out Category result))
+                {
+                    result = Category.Undefined;
+                }
                 return result;
+            }
+            set
+            {
+                if (!Enum.TryParse(value.ToString(), out Category result))
+                {
+                    result = Category.Undefined;
+                }
+                category = result.ToString();
             }
         }
     }

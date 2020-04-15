@@ -54,6 +54,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17aad581d00497c43b6197e894fcc342, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Model:
+    id: 0
+    cards: []
+    name: 
+    Staples: []
   Name: {fileID: 8500995075721012741}
   StaplesCount: {fileID: 5020108621547830228}
   presenter: {fileID: 6562569442662996781}
@@ -323,7 +328,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &6711723863230247676
 RectTransform:
   m_ObjectHideFlags: 0
@@ -338,10 +343,10 @@ RectTransform:
   m_Father: {fileID: 1227857889650818316}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1440, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 720, y: -200}
+  m_SizeDelta: {x: 1440, y: 10}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &4424883377775079507
 CanvasRenderer:

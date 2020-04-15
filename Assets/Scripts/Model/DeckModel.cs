@@ -24,6 +24,6 @@ namespace deckmaster
         /// <summary>
         /// The filtered list of card id's that represent the staples.
         /// </summary>
-        public List<int> Staples;
+        public List<CardModel> Staples;
     }
 }

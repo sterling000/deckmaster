@@ -9,35 +9,31 @@ namespace deckmaster
     {
         public DeckModel Model;
         
-
         public TextMeshProUGUI Name;
         public TextMeshProUGUI StaplesCount;
 
         [SerializeField]
         private CardPresenter presenter;
 
-        private readonly CompositeDisposable disposables = new CompositeDisposable();
-
-        void OnEnable()
+        void Start()
         {
-            Model.ObserveEveryValueChanged(model => model.name).SubscribeToText(Name).AddTo(disposables);
-            Model.cards.ToReactiveCollection().Select(cardModel => cardModel).ToObservable()
-                .Where((cardModel, i) => Model.Staples.Contains(cardModel.card.id))
-                .Subscribe(OnNextCard).AddTo(disposables);
+            Model.ObserveEveryValueChanged(model => model.name).SubscribeToText(Name).AddTo(this);
+            foreach (CardModel staple in Model.Staples.OrderBy(model => model.slot))
+            {
+                OnNextCard(staple);
+            }
             StaplesCount.text = Model.Staples.Count.ToString();
             presenter.gameObject.SetActive(false);
         }
 
         private void OnNextCard(CardModel card)
         {
-            presenter.gameObject.SetActive(true);
             presenter.Create(card);
         }
 
-        void OnDisable()
+        public void Clear()
         {
-            presenter.gameObject.SetActive(true);
-            disposables.Dispose();
+            presenter.Clear();
         }
     }
 }

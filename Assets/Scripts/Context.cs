@@ -5,8 +5,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using TMPro;
 using UniRx;
+using UniRx.Async;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,18 +25,10 @@ public class Context : MonoBehaviour
     public Toggle JsonToggle;
 
     public Button RefreshButton;
-
-    [SerializeField]
-    private List<int> decks;
-
+    
     private List<DeckModel> deckLists;
 
     public List<string> SlotsList;
-
-    public HashSet<int> pendingDeckListRequests;
-    private List<IObservable<Unit>> threadList;
-    // i wanted to use threads for my db access but the persistent data path only seems to be accessible from the main thread, so lets get it here and pass it along.
-    private string PersistentDataPath;
 
     private DataProvider dataProvider;
 
@@ -50,7 +44,6 @@ public class Context : MonoBehaviour
     {
         cts = new CancellationTokenSource();
         deckLists = new List<DeckModel>();
-        PersistentDataPath = Application.persistentDataPath;
         JsonToggle.isOn = GnarlyMenuItems.IsEnabled;
         JsonToggle.OnValueChangedAsObservable().Subscribe(b => GnarlyMenuItems.IsEnabled = b);
         RefreshButton.OnClickAsObservable().Subscribe(_ => RefreshDecks()); // todo: make sure it dispose of this later
@@ -80,75 +73,14 @@ public class Context : MonoBehaviour
         userModelSubject.Subscribe(OnNextUserModel).AddTo(disposables);
 
         dataProvider.GetUserModelTask(userModelSubject).Forget();
-
-            // Todo: stop here and listen for the response message.
-
-            // since we aren't using threads to get the decks in the editor, we are actually calling OnAllDecksCompleted here immediately.
-            // if (GnarlyMenuItems.IsEnabled)
-            // {
-            //     foreach (int id in decks)
-            //     {
-            //         GetDeck(id);
-            //     }
-            // }
-            // else
-            // {
-            //     decks.Clear();
-            //     threadList = new List<IObservable<Unit>>();
-            //     decks.ToReactiveCollection().ObserveAdd().Subscribe(i => GetDeck(i.Value));
-            //     // fetch decklists from Archidekt
-            //     var getDeckIds = Observable.Start(() =>
-            //     {
-            //         var webRequest =
-            //             WebRequest.Create(
-            //                     $"https://archidekt.com/api/decks/cards/?orderBy=-createdAt&owner=Wildcard&ownerexact=true&pageSize=50")
-            //                 as HttpWebRequest;
-            //
-            //         if (webRequest != null)
-            //         {
-            //             webRequest.Method = WebRequestMethods.Http.Get;
-            //
-            //             HttpWebResponse response;
-            //             try
-            //             {
-            //                 response = webRequest.GetResponse() as HttpWebResponse;
-            //             }
-            //             catch (WebException ex)
-            //             {
-            //                 Debug.LogError(ex.Message);
-            //                 return;
-            //             }
-            //
-            //             using (StreamReader reader = new StreamReader(response.GetResponseStream()))
-            //             {
-            //                 UserModel model = JsonUtility.FromJson<UserModel>(reader.ReadToEnd());
-            //                 foreach (UserDeckData userDeckData in model.results)
-            //                 {
-            //                     decks.Add(userDeckData.id);
-            //                 }
-            //             }
-            //             
-            //             response?.GetResponseStream()?.Dispose();
-            //         }
-            //     }).Subscribe(unit => Debug.Log($"OnNextDeckIds"), e => Debug.LogException(e), () =>
-            //         {
-            //             Debug.Log($"OnCompleteDeckIds");
-            //             
-            //             Observable.WhenAll(threadList.ToArray())
-            //                 .ObserveOnMainThread() // we have to observe on the main thread to call instantiate for now.
-            //                 .Subscribe(OnNextAllThreads, Debug.LogException, OnAllDecksCompleted);
-            //         });
-            // }
     }
 
-    private void OnNextUserModel(UserModel model)
+    private async void OnNextUserModel(UserModel model)
     {
-        foreach (UserDeckData userDeckData in model.results)
-        {
-            dataProvider.GetDeckModel(userDeckData.id, DeckModelSubject);
-        }
-
+        IEnumerable<UniTask> tasks = from userDeckData in model.results select dataProvider.GetDeckModelTask(userDeckData.id, DeckModelSubject);
+        UniTask[] uniTaskVoids = tasks.ToArray();
         DeckModelSubject.Take(model.count).Subscribe(OnNextDeckModel, OnDeckModelsCompleted).AddTo(disposables);
+        await UniTask.WhenAll(uniTaskVoids);
     }
 
     private void OnDeckModelsCompleted()
@@ -160,111 +92,81 @@ public class Context : MonoBehaviour
     private void OnNextDeckModel(DeckModel model)
     {
         deckLists.Add(model);
-
-        // cache our decklists
-        DeckInfoDb deckListDB = new DeckInfoDb(PersistentDataPath);
-        deckListDB.CreateOrUpdateData(new DeckInfoEntry(model.id, model.name)); // AddData will have conflicts
-        //deckListDB.Close();
-    }
-
-    private void OnNextAllThreads(Unit obj)
-    {
-        Debug.Log($"OnNextAllThreads: {obj}");
-    }
-
-    private void ParseDeckList(string serializedDeckList)
-    {
-        DeckModel model = DeserializeDeck(serializedDeckList);
-        deckLists.Add(model);
-
-        // cache our decklists
-        DeckInfoDb deckListDB = new DeckInfoDb(PersistentDataPath);
-        deckListDB.CreateOrUpdateData(new DeckInfoEntry(model.id, model.name)); // AddData will have conflicts
-        //deckListDB.Close();
     }
 
     private void OnAllDecksCompleted()
     {
         Debug.Log("AllDecksCompleted");
-        // this is a heavy method...
-        // todo: broadcast this to the screencontroller and let it create these
-        // todo: these for loops are probably not the fastest algorithm.
-        DeckCardDb deckCardDb = new DeckCardDb(PersistentDataPath);
-        // file our deckCardDb with cards
-        foreach (var model in deckLists)
-        {
-            List<CardEntry> cardEntries = new List<CardEntry>();
-            // todo: add a filter for basic lands sideboard and maybeboard categories that is more elegant.
-            var filteredCards = model.cards.Where(cardModel =>
-            {
-                bool hasBasicSuperType = cardModel.card.oracleCard.SuperTypes.HasFlag(SuperTypes.Basic);
-                return ! hasBasicSuperType && cardModel.Category != Category.Maybeboard && cardModel.Category != Category.Sideboard;
-            }).OrderBy(cardModel => cardModel.Category);
-            foreach (CardModel card in filteredCards) 
-            {
-                cardEntries.Add(new CardEntry(card.card.id, card.card.oracleCard.name, model.id));
-            }
-            deckCardDb.CreateOrUpdateData(cardEntries);
-        }
-
-        //query the db for staples
-        Dictionary<int, int> staples = deckCardDb.QueryStaples();
-        List<int> slotList = deckCardDb.QuerySlotList();
-
+        
+        List<CardModel> unsortedCardModels = new List<CardModel>();
         foreach (DeckModel deckModel in deckLists)
         {
-
-            deckPresenter.Create(deckModel);
-            deckModel.Staples = deckCardDb.QueryDeckStaples(deckModel.id);
-            // List<int> deckStaples = deckCardDb.QueryDeckStaples(deckModel.id);
-            // foreach (int staple in deckStaples)
-            // {
-            //     
-            // }
+            List<CardModel> filteredCardModels = deckModel.cards.Where(cardModel =>
+            {
+                bool hasBasicSuperType = cardModel.card.oracleCard.SuperTypes.HasFlag(SuperTypes.Basic);
+                return !hasBasicSuperType && cardModel.Category != Category.Maybeboard &&
+                       cardModel.Category != Category.Sideboard;
+            }).ToList();
+            unsortedCardModels.AddRange(filteredCardModels);
         }
 
-        // create our decklist views
-        // foreach (var deckModel in deckLists)
-        // {
-        //
-        //     DeckView deckView = Instantiate(deckViewPrefab);
-        //     deckView.transform.SetParent(contentRectTransform);
-        //     deckView.Name.text = deckModel.name;
-        //     deckView.StaplesCount.text = staples[deckModel.id].ToString();
-        //
-        //     List<int> deckStaples = deckCardDb.QueryDeckStaples(deckModel.id);
-        //     foreach (int staple in deckStaples)
-        //     {
-        //         CardModel cardModel = deckModel.cards.ToList().Find(card => card.card.id == staple);
-        //         if (cardModel != null)
-        //         {
-        //             deckView.AddCard(cardModel, slotList.IndexOf(cardModel.card.id)+1);
-        //         }
-        //     }
-        // }
-
-        foreach (int id in slotList)
+        IEnumerable<IGrouping<int, CardModel>> modelsGroupedById = unsortedCardModels.GroupBy(model => model.card.id);
+        StringBuilder debugGroupsById = new StringBuilder("modelsGroupedById:");
+        debugGroupsById.AppendLine("--------------------------");
+        foreach (IGrouping<int, CardModel> grouping in modelsGroupedById)
         {
-            SlotsList.Add(deckCardDb.GetNameById(id));   
+            debugGroupsById.AppendLine($"{grouping.Key}");
+            foreach (CardModel cardModel in grouping)
+            {
+                debugGroupsById.AppendLine($"{cardModel.card.oracleCard.name}");
+            }
         }
+
+        debugGroupsById.AppendLine("--------------------------");
+        Debug.Log(debugGroupsById);
+        
+        IOrderedEnumerable<IGrouping<int, CardModel>> modelsGroupedByIdOrderedByCategory = modelsGroupedById.OrderBy(grouping => grouping.FirstOrDefault().Category).ThenByDescending(models => models.Count());
+        IEnumerable<IGrouping<int, CardModel>> modelsGroupedAndSorted = modelsGroupedByIdOrderedByCategory.Where(models => models.Count() > 1);
+        
+        StringBuilder debugOrderedGroupsByCategory = new StringBuilder("modelsGroupedByIdOrdererdByCategory");
+        debugOrderedGroupsByCategory.AppendLine("--------------------------");
+        foreach (IGrouping<int, CardModel> grouping in modelsGroupedAndSorted)
+        {
+            debugOrderedGroupsByCategory.AppendLine($"{grouping.Key}");
+            foreach (CardModel cardModel in grouping)
+            {
+                debugOrderedGroupsByCategory.AppendLine($"{cardModel.card.oracleCard.name} | {cardModel.Category}");
+            }
+            SlotsList.Add(grouping.FirstOrDefault().card.oracleCard.name);
+        }
+        debugOrderedGroupsByCategory.AppendLine("--------------------------");
+        Debug.Log(debugOrderedGroupsByCategory);
+        List<int> stapleIds = modelsGroupedAndSorted.Select(models => models.Key).ToList();
+        foreach (DeckModel deckModel in deckLists)
+        {
+            foreach (CardModel cardModel in deckModel.cards)
+            {
+                if (stapleIds.Contains(cardModel.card.id))
+                {
+                    cardModel.slot = stapleIds.IndexOf(cardModel.card.id) + 1;
+                    deckModel.Staples.Add(cardModel);
+                }
+            }
+            deckPresenter.Create(deckModel);
+        }
+
         StringBuilder builder = new StringBuilder();
         for (var slot = 0; slot < SlotsList.Count; slot++)
         {
             string card = SlotsList[slot];
             builder.AppendLine($"{slot + 1} -> {card}");
         }
-
+        
         SlotsText.text = builder.ToString();
         builder.Clear();
-        deckCardDb.Close();
         loadingSymbol.rotateSpeed = 0;
         RefreshButton.interactable = true;
         SlotsButton.interactable = true;
-    }
-
-    private DeckModel DeserializeDeck(string serializedDeckList)
-    {
-        return JsonUtility.FromJson<DeckModel>(serializedDeckList);
     }
 
     private void ToggleSlotsPanel()
