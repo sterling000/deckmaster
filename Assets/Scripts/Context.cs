@@ -2,10 +2,9 @@
 using PersistentStorage;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
+using System.Threading;
 using TMPro;
 using UniRx;
 using UnityEngine;
@@ -28,10 +27,8 @@ public class Context : MonoBehaviour
 
     public Button RefreshButton;
 
-    /// <summary>
-    /// Until it's determined if we can request my list of decks from the archidekt api, i'll hard code the id's here.
-    /// </summary>
-    public List<int> decks;
+    [SerializeField]
+    private List<int> decks;
 
     public List<DeckModel> deckLists;
 
@@ -41,15 +38,34 @@ public class Context : MonoBehaviour
     private List<IObservable<Unit>> threadList;
     // i wanted to use threads for my db access but the persistent data path only seems to be accessible from the main thread, so lets get it here and pass it along.
     private string PersistentDataPath;
-    
+
+    private DataProvider dataProvider;
+
+    private Subject<UserModel> userModelSubject = new Subject<UserModel>();
+    private ReplaySubject<DeckModel> DeckModelSubject = new ReplaySubject<DeckModel>();
+
+    public CompositeDisposable disposables = new CompositeDisposable();
+
+    private CancellationTokenSource cts;
+
     // Start is called before the first frame update
     void Start()
     {
+        cts = new CancellationTokenSource();
         PersistentDataPath = Application.persistentDataPath;
         JsonToggle.isOn = GnarlyMenuItems.IsEnabled;
         JsonToggle.OnValueChangedAsObservable().Subscribe(b => GnarlyMenuItems.IsEnabled = b);
         RefreshButton.OnClickAsObservable().Subscribe(_ => RefreshDecks()); // todo: make sure it dispose of this later
         SlotsButton.OnClickAsObservable().Subscribe(_ => ToggleSlotsPanel());
+
+        if (GnarlyMenuItems.IsEnabled)
+        {
+            dataProvider = new ResourcesFolderDataProvider();
+        }
+        else
+        {
+            dataProvider = new ArchidektDataProvider();
+        }
     }
 
     private void RefreshDecks()
@@ -59,92 +75,102 @@ public class Context : MonoBehaviour
         DeckListScrollView.gameObject.SetActive(true);
         SlotsScrollView.gameObject.SetActive(false);
         SlotsList.Clear();
-        // todo: clear all the deckViews properly
-        for (int i = contentRectTransform.childCount - 1; i >= 0 ; i--)
-        {
-            Destroy(contentRectTransform.GetChild(i).gameObject);
-        }
 
         SlotsButton.interactable = false;
-        deckLists?.Clear();
-        pendingDeckListRequests?.Clear();
-        threadList?.Clear();
-        Observable.NextFrame().Subscribe(_ =>
-        {
-            /// todo:   load saved data
-            ///         check timestamp
-            ///         request new data
-            ///         if new data analyze decks
-            pendingDeckListRequests = new HashSet<int>();
+
+        userModelSubject.Subscribe(OnNextUserModel).AddTo(disposables);
+
+        dataProvider.GetUserModelTask(userModelSubject).Forget();
+
+            // Todo: stop here and listen for the response message.
 
             // since we aren't using threads to get the decks in the editor, we are actually calling OnAllDecksCompleted here immediately.
-            if (GnarlyMenuItems.IsEnabled)
-            {
-                decks.ToObservable().Subscribe(GetDeck, OnAllDecksCompleted);
-            }
-            else
-            {
-                threadList = new List<IObservable<Unit>>();
-                decks.ToObservable().Subscribe(GetDeck);
-                Observable.WhenAll(threadList.ToArray())
-                    .ObserveOnMainThread() // we have to observe on the main thread to call instantiate for now.
-                    .Subscribe(OnNextAllThreads, Debug.LogException, OnAllDecksCompleted);
-            }
-        });
+            // if (GnarlyMenuItems.IsEnabled)
+            // {
+            //     foreach (int id in decks)
+            //     {
+            //         GetDeck(id);
+            //     }
+            // }
+            // else
+            // {
+            //     decks.Clear();
+            //     threadList = new List<IObservable<Unit>>();
+            //     decks.ToReactiveCollection().ObserveAdd().Subscribe(i => GetDeck(i.Value));
+            //     // fetch decklists from Archidekt
+            //     var getDeckIds = Observable.Start(() =>
+            //     {
+            //         var webRequest =
+            //             WebRequest.Create(
+            //                     $"https://archidekt.com/api/decks/cards/?orderBy=-createdAt&owner=Wildcard&ownerexact=true&pageSize=50")
+            //                 as HttpWebRequest;
+            //
+            //         if (webRequest != null)
+            //         {
+            //             webRequest.Method = WebRequestMethods.Http.Get;
+            //
+            //             HttpWebResponse response;
+            //             try
+            //             {
+            //                 response = webRequest.GetResponse() as HttpWebResponse;
+            //             }
+            //             catch (WebException ex)
+            //             {
+            //                 Debug.LogError(ex.Message);
+            //                 return;
+            //             }
+            //
+            //             using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+            //             {
+            //                 UserModel model = JsonUtility.FromJson<UserModel>(reader.ReadToEnd());
+            //                 foreach (UserDeckData userDeckData in model.results)
+            //                 {
+            //                     decks.Add(userDeckData.id);
+            //                 }
+            //             }
+            //             
+            //             response?.GetResponseStream()?.Dispose();
+            //         }
+            //     }).Subscribe(unit => Debug.Log($"OnNextDeckIds"), e => Debug.LogException(e), () =>
+            //         {
+            //             Debug.Log($"OnCompleteDeckIds");
+            //             
+            //             Observable.WhenAll(threadList.ToArray())
+            //                 .ObserveOnMainThread() // we have to observe on the main thread to call instantiate for now.
+            //                 .Subscribe(OnNextAllThreads, Debug.LogException, OnAllDecksCompleted);
+            //         });
+            // }
+    }
+
+    private void OnNextUserModel(UserModel model)
+    {
+        foreach (UserDeckData userDeckData in model.results)
+        {
+            dataProvider.GetDeckModel(userDeckData.id, DeckModelSubject);
+        }
+
+        DeckModelSubject.Take(model.count).Subscribe(OnNextDeckModel, OnDeckModelsCompleted).AddTo(disposables);
+    }
+
+    private void OnDeckModelsCompleted()
+    {
+        Debug.Log($"OnDeckModelsCompleted");
+        OnAllDecksCompleted();
+    }
+
+    private void OnNextDeckModel(DeckModel model)
+    {
+        deckLists.Add(model);
+
+        // cache our decklists
+        DeckInfoDb deckListDB = new DeckInfoDb(PersistentDataPath);
+        deckListDB.CreateOrUpdateData(new DeckInfoEntry(model.id, model.name)); // AddData will have conflicts
+        //deckListDB.Close();
     }
 
     private void OnNextAllThreads(Unit obj)
     {
         Debug.Log($"OnNextAllThreads: {obj}");
-    }
-
-    private void GetDeck(int id)
-    {
-        Debug.Log($"Getting Deck: {id}");
-        if (pendingDeckListRequests.Add(id))
-        {
-            if (GnarlyMenuItems.IsEnabled)
-            {
-                TextAsset asset = Resources.Load<TextAsset>($"{id}");
-                ParseDeckList(asset.text);
-            }
-            else
-            {
-                var getDeck = Observable.Start(() =>
-                {
-                    var webRequest = WebRequest.Create($"https://archidekt.com/api/decks/{id}/") as HttpWebRequest;
-                    if (webRequest != null)
-                    {
-                        webRequest.Method = WebRequestMethods.Http.Get;
-
-                        HttpWebResponse response;
-                        try
-                        {
-                            response = webRequest.GetResponse() as HttpWebResponse;
-                        }
-                        catch (WebException ex)
-                        {
-                            Debug.LogError(ex.Message);
-                            return;
-                        }
-
-                        OnNextDeck(response);
-                        response?.GetResponseStream()?.Dispose();
-                    }
-                });
-
-                threadList.Add(getDeck);
-            }
-        }
-    }
-
-    private void OnNextDeck(HttpWebResponse response)
-    {
-        using (StreamReader reader = new StreamReader(response.GetResponseStream()))
-        {
-            string serializedDeckList = reader.ReadToEnd();
-            ParseDeckList(serializedDeckList);
-        }
     }
 
     private void ParseDeckList(string serializedDeckList)
@@ -160,6 +186,7 @@ public class Context : MonoBehaviour
 
     private void OnAllDecksCompleted()
     {
+        Debug.Log("AllDecksCompleted");
         // this is a heavy method...
         // todo: broadcast this to the screencontroller and let it create these
         // todo: these for loops are probably not the fastest algorithm.
@@ -232,5 +259,11 @@ public class Context : MonoBehaviour
     {
         DeckListScrollView.gameObject.SetActive(!DeckListScrollView.gameObject.activeInHierarchy);
         SlotsScrollView.gameObject.SetActive(!SlotsScrollView.gameObject.activeInHierarchy);
+    }
+
+    void OnDestroy()
+    {
+        cts.Cancel();
+        cts.Dispose();
     }
 }
