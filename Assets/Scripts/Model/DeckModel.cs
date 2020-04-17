@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace deckmaster
 {
@@ -25,5 +26,15 @@ namespace deckmaster
         /// The filtered list of card id's that represent the staples.
         /// </summary>
         public List<CardModel> Staples;
+
+        public override string ToString()
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (CardModel model in Staples)
+            {
+                builder.AppendLine($"{model.slot}");
+            }
+            return builder.ToString();
+        }
     }
 }

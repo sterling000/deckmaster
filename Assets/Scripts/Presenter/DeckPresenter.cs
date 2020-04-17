@@ -1,5 +1,6 @@
 ﻿using UniRx;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace deckmaster
 {
@@ -13,6 +14,9 @@ namespace deckmaster
 
         public int PreloadThreshold = 2;
 
+        [SerializeField]
+        private ToggleGroup diffDeckToggles;
+
         void Start()
         {
             pool = new DeckViewPool(prefab, this.transform);
@@ -23,6 +27,7 @@ namespace deckmaster
         {
             DeckView view = pool.Rent();
             view.Model = model;
+            diffDeckToggles.RegisterToggle(view.diff);
         }
 
         void OnDestroy()

@@ -7,7 +7,7 @@ namespace deckmaster
 {
     public abstract class DataProvider
     {
-        public abstract UniTask GetUserModelTask(Subject<UserModel> subject);
+        public abstract UniTask GetUserModelTask(ReplaySubject<UserModel> subject);
         public abstract UniTask GetDeckModelTask(int id, ReplaySubject<DeckModel> subject);
         
         protected DeckModel ParseDeckModel(string deck)

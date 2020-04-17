@@ -1,11 +1,8 @@
 ﻿using deckmaster;
-using PersistentStorage;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using TMPro;
 using UniRx;
 using UniRx.Async;
@@ -32,7 +29,7 @@ public class Context : MonoBehaviour
 
     private DataProvider dataProvider;
 
-    private Subject<UserModel> userModelSubject = new Subject<UserModel>();
+    private ReplaySubject<UserModel> userModelSubject = new ReplaySubject<UserModel>();
     private ReplaySubject<DeckModel> DeckModelSubject = new ReplaySubject<DeckModel>();
 
     public CompositeDisposable disposables = new CompositeDisposable();
@@ -57,6 +54,8 @@ public class Context : MonoBehaviour
         {
             dataProvider = new ArchidektDataProvider();
         }
+
+        dataProvider.GetUserModelTask(userModelSubject).Forget();
     }
 
     private void RefreshDecks()
@@ -67,12 +66,10 @@ public class Context : MonoBehaviour
         SlotsScrollView.gameObject.SetActive(false);
         SlotsList.Clear();
         deckPresenter.Clear();
-
+        disposables.Clear();
         SlotsButton.interactable = false;
 
         userModelSubject.Subscribe(OnNextUserModel).AddTo(disposables);
-
-        dataProvider.GetUserModelTask(userModelSubject).Forget();
     }
 
     private async void OnNextUserModel(UserModel model)
@@ -125,7 +122,7 @@ public class Context : MonoBehaviour
         debugGroupsById.AppendLine("--------------------------");
         Debug.Log(debugGroupsById);
         
-        IOrderedEnumerable<IGrouping<int, CardModel>> modelsGroupedByIdOrderedByCategory = modelsGroupedById.OrderBy(grouping => grouping.FirstOrDefault().Category).ThenByDescending(models => models.Count());
+        IOrderedEnumerable<IGrouping<int, CardModel>> modelsGroupedByIdOrderedByCategory = modelsGroupedById.OrderBy(grouping => grouping.FirstOrDefault().Category).ThenByDescending(models => models.Count()).ThenBy(grouping => grouping.Key);
         IEnumerable<IGrouping<int, CardModel>> modelsGroupedAndSorted = modelsGroupedByIdOrderedByCategory.Where(models => models.Count() > 1);
         
         StringBuilder debugOrderedGroupsByCategory = new StringBuilder("modelsGroupedByIdOrdererdByCategory");

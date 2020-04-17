@@ -9,7 +9,7 @@ namespace deckmaster
     {
         CompositeDisposable disposables = new CompositeDisposable();
 
-        public override async UniTask GetUserModelTask(Subject<UserModel> subject)
+        public override async UniTask GetUserModelTask(ReplaySubject<UserModel> subject)
         {
             TextAsset[] textAssets = await UniTask.Run(() => Resources.LoadAll<TextAsset>(""));
 

@@ -11,7 +11,7 @@ namespace deckmaster
     {
         private CompositeDisposable disposables = new CompositeDisposable();
 
-        public override async UniTask GetUserModelTask(Subject<UserModel> subject)
+        public override async UniTask GetUserModelTask(ReplaySubject<UserModel> subject)
         {
             
             var webRequest = WebRequest.Create($"https://archidekt.com/api/decks/cards/?orderBy=-createdAt&owner=Wildcard&ownerexact=true&pageSize=50") as HttpWebRequest;
