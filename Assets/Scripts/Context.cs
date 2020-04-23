@@ -143,7 +143,7 @@ public class Context : MonoBehaviour
         {
             foreach (CardModel cardModel in deckModel.cards)
             {
-                if (stapleIds.Contains(cardModel.card.id))
+                if (stapleIds.Contains(cardModel.card.id) && cardModel.Category != Category.Maybeboard && cardModel.Category != Category.Sideboard)
                 {
                     cardModel.slot = stapleIds.IndexOf(cardModel.card.id) + 1;
                     deckModel.Staples.Add(cardModel);
